@@ -19,20 +19,18 @@ package ar.edu.um.vj09.juegosimple;
 
 public class JuegoSimple extends ApplicationAdapter {
 	private Texture dropImage;
-	private Texture bucketImage;
+
 	private Sound dropSound;
 	private Music rainMusic;
 	private SpriteBatch batch;
 	private OrthographicCamera camera;
-	private Rectangle bucket;
 	private Array<Rectangle> raindrops;
 	private long lastDropTime;
+	Jugador jugador;
 
 	@Override
 	public void create() {
-		// load the images for the droplet and the bucket, 64x64 pixels each
-		dropImage = new Texture(Gdx.files.internal("droplet.png"));
-		bucketImage = new Texture(Gdx.files.internal("bucket.png"));
+		dropImage = Texturas.getInstance().getDropImage();
 
 		// load the drop sound effect and the rain background "music"
 		dropSound = Gdx.audio.newSound(Gdx.files.internal("drop.wav"));
@@ -41,18 +39,11 @@ public class JuegoSimple extends ApplicationAdapter {
 		// start the playback of the background music immediately
 		rainMusic.setLooping(true);
 		rainMusic.play();
-
+		jugador = new Jugador(Texturas.getInstance().getBucketImage());
 		// create the camera and the SpriteBatch
 		camera = new OrthographicCamera();
 		camera.setToOrtho(false, 800, 480);
 		batch = new SpriteBatch();
-
-		// create a Rectangle to logically represent the bucket
-		bucket = new Rectangle();
-		bucket.x = 800 / 2 - 64 / 2; // center the bucket horizontally
-		bucket.y = 20; // bottom left corner of the bucket is 20 pixels above the bottom screen edge
-		bucket.width = 64;
-		bucket.height = 64;
 
 		// create the raindrops array and spawn the first raindrop
 		raindrops = new Array<Rectangle>();
@@ -88,7 +79,7 @@ public class JuegoSimple extends ApplicationAdapter {
 		// begin a new batch and draw the bucket and
 		// all drops
 		batch.begin();
-		batch.draw(bucketImage, bucket.x, bucket.y);
+		batch.draw(jugador.getImagen(), jugador.getBucket().x, jugador.getBucket().y);
 		for(Rectangle raindrop: raindrops) {
 			batch.draw(dropImage, raindrop.x, raindrop.y);
 		}
@@ -99,14 +90,12 @@ public class JuegoSimple extends ApplicationAdapter {
 			Vector3 touchPos = new Vector3();
 			touchPos.set(Gdx.input.getX(), Gdx.input.getY(), 0);
 			camera.unproject(touchPos);
-			bucket.x = touchPos.x - 64 / 2;
+			jugador.setCoordX(touchPos.x);
 		}
-		if(Gdx.input.isKeyPressed(Keys.LEFT)) bucket.x -= 200 * Gdx.graphics.getDeltaTime();
-		if(Gdx.input.isKeyPressed(Keys.RIGHT)) bucket.x += 200 * Gdx.graphics.getDeltaTime();
+		if(Gdx.input.isKeyPressed(Keys.LEFT)) jugador.moverIzquierda(200);
+		if(Gdx.input.isKeyPressed(Keys.RIGHT)) jugador.moverDerecha(200);
 
-		// make sure the bucket stays within the screen bounds
-		if(bucket.x < 0) bucket.x = 0;
-		if(bucket.x > 800 - 64) bucket.x = 800 - 64;
+
 
 		// check if we need to create a new raindrop
 		if(TimeUtils.nanoTime() - lastDropTime > 1000000000) spawnRaindrop();
@@ -119,7 +108,7 @@ public class JuegoSimple extends ApplicationAdapter {
 			Rectangle raindrop = iter.next();
 			raindrop.y -= 200 * Gdx.graphics.getDeltaTime();
 			if(raindrop.y + 64 < 0) iter.remove();
-			if(raindrop.overlaps(bucket)) {
+			if(raindrop.overlaps(jugador.getBucket())) {
 				dropSound.play();
 				iter.remove();
 			}
@@ -130,7 +119,7 @@ public class JuegoSimple extends ApplicationAdapter {
 	public void dispose() {
 		// dispose of all the native resources
 		dropImage.dispose();
-		bucketImage.dispose();
+		Texturas.getInstance().getBucketImage().dispose();
 		dropSound.dispose();
 		rainMusic.dispose();
 		batch.dispose();
